@@ -1,5 +1,8 @@
 # Menu AI
 
+![Description](img.gif)
+
+
 A small customer-facing restaurant menu web app for Grill & Slice. It shows burger and pizza menu items and includes an AI Helper tab that answers menu questions through a local Ollama model.
 
 ## Features

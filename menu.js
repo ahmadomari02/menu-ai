@@ -72,8 +72,7 @@ const menuItems = [
 ];
 
 const OLLAMA_URLS = [
-  "http://127.0.0.1:11434/api/chat",
-  "http://localhost:11434/api/chat",
+  "/api/ollama",
 ];
 const OLLAMA_MODEL = "llama3.2:latest";
 
@@ -222,7 +221,7 @@ async function askOllama(question) {
   }
 
   throw new Error(
-    `The browser could not connect to Ollama at 127.0.0.1 or localhost. ${lastError?.message || ""}`.trim()
+    `The web server could not connect to Ollama. ${lastError?.message || ""}`.trim()
   );
 }
 
@@ -233,7 +232,7 @@ function setupAssistant() {
   if (!form || !input) return;
 
   if (window.location.protocol === "file:") {
-    setAssistantStatus("Serve this page from localhost to use Ollama", "error");
+    setAssistantStatus("Serve this page from the local server to use Ollama", "error");
   }
 
   form.addEventListener("submit", async (event) => {
@@ -250,13 +249,13 @@ function setupAssistant() {
 
     try {
       if (window.location.protocol === "file:") {
-        throw new Error("This page is opened as a file, and Ollama blocks that browser origin. Serve the site from http://localhost instead.");
+        throw new Error("This page is opened as a file. Serve the site with start-server.ps1 instead.");
       }
 
       const answer = await askOllama(question);
       pendingMessage.querySelector("p").textContent = answer;
       pendingMessage.classList.remove("pending");
-      setAssistantStatus("Ollama ready on port 11434", "ready");
+      setAssistantStatus("Ollama ready through the local server", "ready");
     } catch (error) {
       pendingMessage.querySelector("p").textContent =
         `${error.message} The site is configured to use ${OLLAMA_MODEL}.`;

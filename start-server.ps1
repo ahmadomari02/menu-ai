@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $root = [System.IO.Path]::GetFullPath($PSScriptRoot)
 $port = 8000
-$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $port)
+$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $port)
 
 $contentTypes = @{
   ".css" = "text/css"
@@ -31,6 +31,85 @@ function Send-Response {
   if ($Body.Length -gt 0) {
     $Stream.Write($Body, 0, $Body.Length)
   }
+}
+
+function Read-RequestBody {
+  param(
+    [System.IO.StreamReader] $Reader,
+    [hashtable] $Headers
+  )
+
+  if (-not $Headers.ContainsKey("Content-Length")) {
+    return ""
+  }
+
+  $length = [int]$Headers["Content-Length"]
+  if ($length -le 0) {
+    return ""
+  }
+
+  $buffer = New-Object char[] $length
+  $offset = 0
+
+  while ($offset -lt $length) {
+    $read = $Reader.Read($buffer, $offset, $length - $offset)
+    if ($read -le 0) {
+      break
+    }
+
+    $offset += $read
+  }
+
+  if ($offset -le 0) {
+    return ""
+  }
+
+  return -join $buffer[0..($offset - 1)]
+}
+
+function Send-OllamaResponse {
+  param(
+    [System.Net.Sockets.NetworkStream] $Stream,
+    [string] $Body
+  )
+
+  $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Body)
+  $request = [System.Net.WebRequest]::Create("http://127.0.0.1:11434/api/chat")
+  $request.Method = "POST"
+  $request.ContentType = "text/plain"
+  $request.ContentLength = $bodyBytes.Length
+
+  $requestStream = $request.GetRequestStream()
+  $requestStream.Write($bodyBytes, 0, $bodyBytes.Length)
+  $requestStream.Close()
+
+  try {
+    $response = $request.GetResponse()
+  }
+  catch [System.Net.WebException] {
+    if ($_.Exception.Response -eq $null) {
+      $errorBody = [System.Text.Encoding]::UTF8.GetBytes("Ollama is not reachable on this computer.")
+      Send-Response $Stream 502 "Bad Gateway" $errorBody
+      return
+    }
+
+    $response = $_.Exception.Response
+  }
+
+  $responseStream = $response.GetResponseStream()
+  $memoryStream = [System.IO.MemoryStream]::new()
+  $responseStream.CopyTo($memoryStream)
+  $responseBytes = $memoryStream.ToArray()
+  $statusCode = [int]$response.StatusCode
+  $statusText = $response.StatusDescription
+  $contentType = $response.ContentType
+
+  if ([string]::IsNullOrWhiteSpace($contentType)) {
+    $contentType = "application/json"
+  }
+
+  Send-Response $Stream $statusCode $statusText $responseBytes $contentType
+  $response.Close()
 }
 
 function Get-ContentType {
@@ -64,6 +143,7 @@ function Get-RequestPath {
 
 $listener.Start()
 Write-Host "Serving $root at http://localhost:$port/"
+Write-Host "Other devices on the same network can use http://YOUR-PC-IP:$port/"
 Write-Host "Press Ctrl+C to stop."
 
 try {
@@ -74,15 +154,30 @@ try {
       $stream = $client.GetStream()
       $reader = [System.IO.StreamReader]::new($stream, [System.Text.Encoding]::ASCII, $false, 1024, $true)
       $requestLine = $reader.ReadLine()
+      $headers = @{}
 
       while ($reader.Peek() -gt -1) {
         $line = $reader.ReadLine()
         if ([string]::IsNullOrEmpty($line)) {
           break
         }
+
+        $separator = $line.IndexOf(":")
+        if ($separator -gt 0) {
+          $name = $line.Substring(0, $separator).Trim()
+          $value = $line.Substring($separator + 1).Trim()
+          $headers[$name] = $value
+        }
       }
 
       $requestPath = Get-RequestPath $requestLine
+
+      if ($requestPath -eq "api/ollama") {
+        $requestBody = Read-RequestBody $reader $headers
+        Send-OllamaResponse $stream $requestBody
+        continue
+      }
+
       $fullPath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($root, $requestPath))
 
       if (-not $fullPath.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) {
