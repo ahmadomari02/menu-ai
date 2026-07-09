@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grill & Slice — Restaurant Menu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="tagline">Fresh off the grill · Hot from the oven</p>
+      <h1>Grill &amp; Slice</h1>
+      <p class="subtitle">Burgers &amp; Pizza made with love</p>
+    </div>
+  </header>
+
+  <nav class="category-nav" aria-label="Menu categories">
+    <button class="filter-btn active" data-category="all">All</button>
+    <button class="filter-btn" data-category="Burgers">Burgers</button>
+    <button class="filter-btn" data-category="Pizza">Pizza</button>
+    <button class="filter-btn" data-category="Assistant">AI Helper</button>
+  </nav>
+
+  <main class="menu">
+    <section class="menu-section" data-section="Burgers">
+      <div class="section-header">
+        <span class="section-icon">🍔</span>
+        <h2>Burgers</h2>
+        <p>Hand-formed patties, toasted buns, bold flavors</p>
+      </div>
+      <div class="menu-grid" id="burgers-grid"></div>
+    </section>
+
+    <section class="menu-section" data-section="Pizza">
+      <div class="section-header">
+        <span class="section-icon">🍕</span>
+        <h2>Pizza</h2>
+        <p>Stone-baked crust, house sauce, premium toppings</p>
+      </div>
+      <div class="menu-grid" id="pizza-grid"></div>
+    </section>
+
+    <section class="menu-section assistant-section" data-section="Assistant">
+      <div class="section-header">
+        <span class="section-icon">AI</span>
+        <h2>Ask Grill &amp; Slice</h2>
+        <p>Fast answers for menu choices, dietary needs, and pairings</p>
+      </div>
+
+      <div class="assistant-panel" aria-label="Ollama customer assistant">
+        <div class="assistant-status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="ollama-status">Ollama ready on localhost:11434</span>
+        </div>
+
+        <div class="chat-log" id="chat-log" aria-live="polite">
+          <div class="chat-message assistant">
+            <p>Hi, I can help you pick from today's burgers and pizzas.</p>
+          </div>
+        </div>
+
+        <form class="chat-form" id="chat-form">
+          <label class="sr-only" for="customer-question">Ask about the menu</label>
+          <input
+            id="customer-question"
+            type="text"
+            autocomplete="off"
+            placeholder="Ask for a recommendation"
+            required
+          >
+          <button type="submit">Ask</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>All prices in USD · Ask about combo deals</p>
+    <p class="hours">Open daily 11am – 11pm</p>
+  </footer>
+
+  <script src="menu.js"></script>
+</body>
+</html>
